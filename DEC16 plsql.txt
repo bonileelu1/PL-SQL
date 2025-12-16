@@ -1,0 +1,285 @@
+create or replace PROCEDURE PRG2 AS 
+db varchar2(30);
+dbedition varchar2(30);
+ver1 number := 11;
+dbpro varchar(50);
+BEGIN
+    db := 'Oracle ';
+    dbedition :='Express Edition ';
+    dbpro := db||dbedition||ver1||'g';
+    dbms_output.put_line('Database :- ' ||dbpro);
+        
+END PRG2;
+
+-------------------------------------------------------------------------------
+create or replace PROCEDURE PRG4 AS 
+v_deptid number :=110;
+v_bonus number:=750;
+BEGIN
+  insert into emp2 values(501,'Sam',sysdate, 'HCM_Dev',15000+v_bonus, 150);
+  insert into emp2 values(502,'Nancy',sysdate, 'HCM_Dev',15500+v_bonus, 150);
+  update emp2 set salary=salary+v_bonus where job_id='IT_PROG';
+  delete from emp2 where deptid =110;
+  dbms_output.put_line('Prodcure completed the bulk transaction');
+END PRG4;
+
+----------------------------------------------------------------------------
+
+create or replace PROCEDURE PRG5 AS 
+v_empname varchar2(30);
+v_job varchar2(30);
+v_doj date;
+v_sal number;
+v_newsal number;
+BEGIN
+   select empname, job_id, doj, salary into v_empname,v_job, v_doj, v_sal
+            from emp2 where empid=107;
+        dbms_output.put_line('Employee NAme :'||v_empname);
+         dbms_output.put_line('Job Des :'||v_job);
+         dbms_output.put_line('Date of Joining :'||v_doj);
+         dbms_output.put_line('Salary :'||v_sal);
+         v_newsal:= v_sal*.30+v_sal;
+        dbms_output.put_line('Update SALARY :'||v_newsal);  
+          
+   
+END PRG5;
+-----------------------------------------------------------------------------
+create or replace PROCEDURE PRG6 AS 
+v_empname varchar2(30);
+v_job varchar2(30);
+v_deptid number;
+v_sal number;
+v_deptname varchar2(3);
+BEGIN
+  select empname, job_id, salary, deptid into 
+        v_empname,v_job,v_sal,v_deptid from emp2 where empid=181;
+  select department_name into v_deptname from departments
+        where department_id=v_deptid;
+  dbms_output.put_line('Employee NAme :'||v_empname);
+  dbms_output.put_line('Job Des :'||v_job);
+  dbms_output.put_line('Department Name :'||v_deptname);
+  dbms_output.put_line('Salary :'||v_sal);
+END PRG6;
+--------------------------------------------------------------------------
+create or replace PROCEDURE PRG7 AS 
+v_empname emp2.empname%type;
+v_job emp2.job_id%type;
+v_deptid number;
+v_sal number;
+v_deptname departments.department_name%type;
+BEGIN
+  select empname, job_id, salary, deptid into 
+        v_empname,v_job,v_sal,v_deptid from emp2 where empid=145;
+  select department_name into v_deptname from departments
+        where department_id=v_deptid;
+  dbms_output.put_line('Employee NAme :'||v_empname);
+  dbms_output.put_line('Job Des :'||v_job);
+  dbms_output.put_line('Department Name :'||v_deptname);
+  dbms_output.put_line('Salary :'||v_sal);
+END PRG7;
+---------------------------------------------------------------------------
+create or replace PROCEDURE PRG8 AS 
+r_emp emp2%rowtype;
+v_deptname departments.department_name%type;
+v_newsal number;
+BEGIN
+  select * into 
+        r_emp from emp2 where empid=175;
+  select department_name into v_deptname from departments
+        where department_id=r_emp.deptid;
+  dbms_output.put_line('Employee NAme :'||r_emp.empname);
+  dbms_output.put_line('Job Des :'||r_emp.job_id);
+  dbms_output.put_line('Department Name :'||v_deptname);
+  dbms_output.put_line('Salary :'||r_emp.salary);
+  v_newsal:= r_emp.salary*.15+r_emp.salary;
+  dbms_output.put_line('Salary :'||v_newsal);
+END PRG8;
+------------------------------------------------------------------
+create or replace PROCEDURE PRG9 (  V_EMPID IN NUMBER ) AS 
+r_emp emp2%rowtype;
+v_deptname departments.department_name%type;
+v_newsal number;
+BEGIN
+  select * into 
+        r_emp from emp2 where empid=v_empid;
+  select department_name into v_deptname from departments
+        where department_id=r_emp.deptid;
+  dbms_output.put_line('Employee NAme :'||r_emp.empname);
+  dbms_output.put_line('Job Des :'||r_emp.job_id);
+  dbms_output.put_line('Department Name :'||v_deptname);
+  dbms_output.put_line('Salary :'||r_emp.salary);
+  v_newsal:= r_emp.salary*.15+r_emp.salary;
+  dbms_output.put_line('Salary :'||v_newsal);
+END PRG9;
+----------------------------------------------------------------------------
+create or replace PROCEDURE PRG10 (  V_DEPTID IN NUMBER ) AS 
+v_deptname departments.department_name%type;
+v_noemp number;
+v_totsal number;
+v_avgsal number;
+BEGIN
+  select department_name into v_deptname from departments 
+            where department_id=v_deptid;
+  select count(empid), sum(salary) , avg(salary) 
+        into    v_noemp,v_totsal,v_avgsal
+    from emp2  where deptid=v_deptid;
+dbms_output.put_line('Department Name : ' ||v_deptname);
+dbms_output.put_line('Number of Employees :' ||v_noemp);
+dbms_output.put_line('Total Salary :'||v_totsal);
+dbms_output.put_line('Avg Salary :'||round(v_avgsal,0));
+    
+END PRG10;
+--------------------------------------------------------------------------
+create or replace PROCEDURE PRG11 (  V_EMPid IN NUMBER ) AS
+v_empname emp2.empname%type;
+v_deptname departments.department_name%type;
+v_job emp2.job_id%type;
+v_sal number;
+
+BEGIN
+    
+    select  e.empname, d.department_name,e.job_id,e.salary
+            into v_empname,v_deptname,v_job,v_sal
+        from emp2 e join departments d on(d.department_id=e.deptid)
+        where e.empid >150;
+dbms_output.put_line('Employee Name  : ' ||v_empname);    
+dbms_output.put_line('Department Name : ' ||v_deptname);
+dbms_output.put_line('Job ID : ' ||v_job);
+dbms_output.put_line('Salary : ' ||v_SAL);
+exception
+    when no_data_found then
+        dbms_output.put_line('No Such employee Id.');
+    when too_many_rows then
+        dbms_output.put_line('Select into fetch More than One record');
+    when others  then
+        dbms_output.put_line('Some error occured');
+        
+            
+END PRG11;
+--------------------------------------------------------------------------------
+create or replace PROCEDURE PRG12 (  V_EMPID IN NUMBER ) AS 
+v_empname emp2.empname%type;
+v_deptname departments.department_name%type;
+v_job emp2.job_id%type;
+v_sal number;
+e_myerror exception;
+
+BEGIN
+if v_empid between 100 and 205 then
+    select  e.empname, d.department_name,e.job_id,e.salary
+            into v_empname,v_deptname,v_job,v_sal
+        from emp2 e join departments d on(d.department_id=e.deptid)
+        where e.empid =v_empid;
+else
+     raise e_myerror;
+end if;
+dbms_output.put_line('Employee Name  : ' ||v_empname);    
+dbms_output.put_line('Department Name : ' ||v_deptname);
+dbms_output.put_line('Job ID : ' ||v_job);
+dbms_output.put_line('Salary : ' ||v_SAL);
+exception
+    when e_myerror then
+        dbms_output.put_line('No Such employee Id.');
+    when too_many_rows then
+        dbms_output.put_line('Select into fetch More than One record');
+    when others  then
+        dbms_output.put_line('Some error occured');
+END PRG12;
+------------------------------------------------------------------
+create or replace PROCEDURE PRG13 AS 
+var1 number:=10;
+BEGIN
+ 
+   
+   loop
+        dbms_output.put_line('Value of var1 is '||var1);
+        var1:=var1+1;
+        /*if var1=555  then
+            exit;
+        end if;*/
+        exit when var1=355;
+   end loop;
+END PRG13;
+---------------------------------------------------------------------
+create or replace PROCEDURE PRG14 AS 
+r_emp emp2%rowtype;
+BEGIN
+  for v_empid in 100..200
+  loop
+        select * into r_emp from emp2 where empid =v_empid;
+        dbms_output.put_line('Employee Id '|| v_empid);
+        dbms_output.put_line('Employee Name  : ' ||r_emp.empname);    
+        dbms_output.put_line('Job ID : ' ||r_emp.job_id);
+        dbms_output.put_line('Salary : ' ||r_emp.salary);
+        dbms_output.put_line('-------------------------------------');
+  end loop;
+END PRG14;
+------------------------------------------------------------------------
+create or replace PROCEDURE PRG15 AS 
+cursor  c_emp is select empid, empname,job_id, salary from emp2;
+v_empid number;
+v_empname varchar2(30);
+v_job varchar2(30);
+v_sal number;
+--r_emp c_emp%rowtype;
+BEGIN
+  open c_emp;
+    loop
+        fetch c_emp into v_empid,v_empname,v_job,v_sal;
+        exit when c_emp%notfound;
+            dbms_output.put_line('Employee Id '|| v_empid);
+            dbms_output.put_line('Employee Name  : ' ||v_empname);    
+            dbms_output.put_line('Job ID : ' ||v_job);
+            dbms_output.put_line('Salary : ' ||v_sal);
+            dbms_output.put_line('---------------change----------------------');
+  
+    end loop;
+  close c_emp;
+END PRG15;
+-----------------------------------------------------------------------------
+
+create or replace PROCEDURE PRG16 AS 
+cursor c_emp is select * from emp2;
+r_emp c_Emp%rowtype;
+v_newsal number;
+BEGIN
+  open c_emp;
+    loop
+        fetch c_emp into r_emp;
+        exit when c_emp%notfound;
+            if r_emp.job_id ='IT_PROG' then
+                if r_emp.doj <'01-01-07' then
+                    v_newsal:=r_emp.salary+999;
+                else
+                    v_newsal:=r_emp.salary+888;
+                end if;
+            elsif r_emp.job_id ='SA_REP' then
+                if r_emp.doj <'01-01-07' then
+                    v_newsal:=r_emp.salary+777;
+                else
+                    v_newsal:=r_emp.salary+666;
+                end if;
+             elsif r_emp.job_id ='SA_MAN' then
+                if r_emp.doj <'01-01-07' then
+                    v_newsal:=r_emp.salary+555;
+                else
+                    v_newsal:=r_emp.salary+444;
+                end if;
+              else
+                  if r_emp.doj <'01-01-07' then
+                    v_newsal:=r_emp.salary+333;
+                else
+                    v_newsal:=r_emp.salary+222;
+                end if;
+            end if;
+        insert into emp26 values(r_emp.empid,r_emp.empname,r_emp.doj,r_emp.job_id,
+                                    v_newsal,r_emp.deptid);
+    end loop;
+    dbms_output.put_line('Number of record created and inserted in emp26 is '||c_emp%rowcount);
+    
+  close c_emp;
+  
+  dbms_output.put_line('Procedure completed bulk transaction');
+END PRG16;
+
+--------------------------------------------------------------------------------
