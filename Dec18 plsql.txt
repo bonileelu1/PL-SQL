@@ -1,0 +1,124 @@
+===========================================================================================
+
+ SQL> create table empsal2 values(empid number, basicpay number, hra number, da number, medall number, 					  otherall);
+
+create or replace TRIGGER ACT2 BEFORE INSERT ON EMP2 for each row
+declare
+v_basicpay number:= :new.salary*.50;
+v_hra number := :new.salary*.20;
+v_da number := :new.salary*.10;
+v_medall number := :new.salary*.10;
+v_otherall number := :new.salary*.10;
+BEGIN
+  
+  insert into empsal2 values(:new.empid,v_basicpay,v_hra,v_da,v_medall,v_otherall);
+END;
+
+===========================================================================================
+SQL>create table products (pid number, 
+			proname varchar2(20), 
+			category varchar2(20), 
+			price number, 
+			qty number);
+
+SQL>insert into products values(10,'Camelin X10','Pen' ,20, 150);
+SQL>insert into products values(20,'Camelin Z10','Gel Pen' ,25, 250);
+SQL>insert into products values(30,'Nataraj Gel','Gel Pen' ,15, 50);
+SQL> insert into products values(40,'Apsara Dark HB2','Pencil' ,20, 60);
+
+SQL> create table orders (oid number,orderdate date, pid number, qty number);
+
+
+
+
+
+------------------
+create or replace TRIGGER ACT3 BEFORE INSERT ON ORDERS for each row
+declare
+v_pname varchar2(20);
+v_qtystock number;
+BEGIN
+   update products set  qtystock=qtystock -:new.qty where pid=:new.pid;
+   select proname, qtystock into v_pname,v_qtystock
+        from products where pid= :new.pid;
+    if v_qtystock <20 then
+        dbms_output.put_line(v_pname ||' is running out of stock ');
+        dbms_output.put_line('Left out stock is '||v_qtystock||' PLease make order');
+    end if;
+END;
+==========================================================================================
+
+SQL > select * from products;
+SQL > create table proold as( select pid, proname, category, price from products 
+                        where pid=1);
+
+
+CREATE OR REPLACE TRIGGER ACT4 BEFORE UPDATE ON PRODUCTS for each row
+declare
+BEGIN
+  insert into proold values(:old.pid, :old.proname,:old.category,:old.price);
+END;
+
+============================================================================================
+SQL>create table prolog ( userId varchar2(30), pid number, 
+                    Changedate timestamp, Action varchar2(30));
+                    
+SQL>select * from prolog;
+
+SQL>select * from products;
+
+SQL>update products set price =55 where pid =40;
+SQL>delete from products where pid=30;
+SQL>insert into products values (555,'Cello Pen','Pen',50,150);
+
+
+
+create or replace PROCEDURE PRO16 (  V_JOBID IN VARCHAR2 ) AS 
+v_row number;
+BEGIN
+  update emp set salary=salary*.25+salary where job_id=v_jobid;
+  if SQL%found then
+    v_row:= SQL%rowcount;
+    dbms_output.put_line('Number of record update for job_id ' ||v_jobid|| ' is '||v_row);
+  elsif SQL%notfound then
+    dbms_output.put_line('No such job_id '||v_jobid ||' Found in emp table');
+  end if;
+  dbms_output.put_line('Procedure conmpleted');
+END PRO16;
+
+
+====================================================================================================
+
+CREATE OR REPLACE PACKAGE PKGSALPRO AS 
+
+procedure attcal;
+procedure salcal;
+procedure pfcal;
+procedure bankst;
+
+END PKGSALPRO;
+
+CREATE OR REPLACE PACKAGE BODY PKGSALPRO AS
+
+  procedure attcal AS
+  BEGIN
+    dbms_output.put_line('Employee Attendance calculation is completed');
+  END attcal;
+
+  procedure salcal AS
+  BEGIN
+        dbms_output.put_line('Employee Salary calculation is completed');
+  END salcal;
+
+  procedure pfcal AS
+  BEGIN
+     dbms_output.put_line('Employee PF calculation is completed');
+  END pfcal;
+
+  procedure bankst AS
+  BEGIN
+      dbms_output.put_line('Bank statement is  prepared');
+  END bankst;
+
+END PKGSALPRO;
+=====================================================================================================
