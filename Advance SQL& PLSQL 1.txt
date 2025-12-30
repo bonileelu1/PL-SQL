@@ -1,0 +1,415 @@
+
+
+--------------------------- Procedure with IN OUT Parameter --------------------------------------
+create or replace PROCEDURE INOUT 
+(
+  P_CID IN NUMBER 
+, P_COUNT OUT NUMBER 
+) AS 
+BEGIN
+    SELECT count(product_id)  INTO p_count  FROM products   WHERE category_id = p_cid;
+       
+
+END INOUT;
+
+/*DECLARE
+    v_categoryid number := 4; 
+    v_countpro   number;
+    
+BEGIN
+   
+    inout(v_categoryid, v_countpro);
+
+   
+    DBMS_OUTPUT.PUT_LINE('Number of products in categoryid ' || v_categoryid || ' is ' || v_countpro);
+
+END;
+/
+
+---------------------------PLSQL Collection  type VArrays -------------------------------------------
+
+
+create or replace PROCEDURE VARRAYPRO AS
+    type t_custname is varray(100) of varchar2(100);
+    v_custname t_custname :=t_custname();
+    cursor c_cust is select name from customers where rownum <=200;
+BEGIN
+    FOR rec in c_cust LOOP
+        v_custname.EXTEND; -- Allocate memory for one more element
+        v_custname(v_custname.LAST) := rec.name;
+    END LOOP;
+    dbms_output.put_line('Total Customers in Varray: ' || v_custname.COUNT);
+     dbms_output.put_line('------------------------------------------');
+
+    FOR i IN 1 .. v_custname.COUNT LOOP
+         dbms_output.put_line('Customer ' || i || ': ' || v_custname(i));
+    END LOOP;
+
+END VARRAYPRO;
+
+-------------Composite DataType -Associative Arrays (Index-by Tables) -------------------------------
+
+create or replace PROCEDURE INDEXBYTAB AS 
+cursor  c_customers is   select name from customers; 
+   TYPE t_list IS TABLE of customers.Name%type INDEX BY binary_integer; 
+                --Index-by tables or Associative array 
+   rec_namelist t_list; 
+   counter integer :=0; 
+BEGIN 
+   FOR n IN c_customers LOOP 
+      counter := counter +1; 
+      rec_namelist(counter) := n.name; 
+      dbms_output.put_line('Customer('||counter||'):'||rec_namelist(counter)); 
+   END LOOP; 
+   
+   
+END INDEXBYTAB;
+------------------- Composite DataType - Nested Tables  & BULK COLLECT ------------------------------
+
+create or replace PROCEDURE TYPE_BULK AS 
+cursor c_pro is select * from products;
+type t_product is table of products%rowtype; --Nested table
+rec_pro t_product;
+BEGIN
+  open c_pro;
+        fetch c_pro bulk collect into rec_pro;  
+  close c_pro;
+   
+ dbms_output.put_line('Total Records Fetched: ' || rec_pro.COUNT);
+
+ FOR i IN 1 .. rec_pro.COUNT LOOP
+        dbms_output.put_line('Product: '||i ||':' || rec_pro(i).product_name);
+ END LOOP;
+   
+END TYPE_BULK;
+--------------------Composite DataType - Nested Tables  & BULK COLLECT - Limit ---------------------- 
+
+create or replace PROCEDURE BULKLIMIT AS 
+cursor c_pro is select * from products;
+type t_product is table of products%rowtype;
+rec_pro t_product;
+BEGIN
+ open c_pro;
+    loop
+        fetch c_pro bulk collect into rec_pro limit 50;  
+        exit when rec_pro.count=0;
+        dbms_output.put_line('---------------------------------------------------');
+        dbms_output.put_line('----Total Records Fetched: ----' || rec_pro.COUNT);
+        dbms_output.put_line('---------------------------------------------------');
+       for  i in 1 .. rec_pro.count loop
+        dbms_output.put_line('Product: ' || rec_pro(i).product_name);
+       end loop;
+    end loop;
+ close c_pro;
+ END BULKLIMIT;
+
+------------------------------  Dynamic SQL - EXECUTE IMMEDIATE ---------------------------
+
+create or replace PROCEDURE DYNSQL (  P_TABLENAME IN VARCHAR2 ) AS 
+q_sql VARCHAR2(100);
+v_count number;
+BEGIN
+     q_sql := 'SELECT COUNT(*) FROM ' || p_tablename;
+    
+    EXECUTE IMMEDIATE q_sql INTO v_count;
+    dbms_output.put_line('Number of  record is '||v_count);
+END DYNSQL;
+
+-----------------------   Dynamic SQL - EXECUTE IMMEDIATE  ----------------------------------
+
+create or replace PROCEDURE dynsql2 ( p_table_name IN VARCHAR2,
+    p_columns  IN VARCHAR2,
+    p_datatype in varchar2) AS
+    v_sql VARCHAR2(1000);
+BEGIN
+
+    v_sql := 'CREATE TABLE ' || p_table_name || ' (' || p_columns ||' ' ||p_datatype|| ')';  
+    DBMS_OUTPUT.PUT_LINE('Executing: ' || v_sql);
+    EXECUTE IMMEDIATE v_sql;
+    DBMS_OUTPUT.PUT_LINE('Table "' || p_table_name || '" created successfully.');
+
+END;
+----------------------------------X-X-X-X-X---------------------------------------------
+Write a SQL query to display the order detail  with Order_id, product_id, quantity and unit_price. Where Orders is placed in the year 2017
+JOIN
+	SELECT oi.order_id, oi.product_id, oi.quantity, oi.unit_price
+		FROM order_items oi
+	join orders o ON oi.order_id = o.order_id
+	where o.order_date LIKE '%17';
+
+
+SUBQUERY
+        select order_id,product_id,quantity,unit_price
+    		from order_items
+     	where order_id in (select Order_id from orders where order_date like '%17');
+
+Co-Related Subquery
+	select order_id, product_id,quantity,unit_price
+    	from order_items oi
+     	where order_id in (select order_id from orders o 
+                            where o.order_id=oi.order_id and order_date like '%17');
+
+-----------------------------------X-X-X-X-X-----------------------------------------
+Co-Related Subquery
+--------------------
+
+Write a SQL query to list customers who made order so for with customer_id and name as customer_name
+
+
+	select customer_id,name as customer_name
+	   from customers c
+   	 where exists (select 1 from orders o where o.customer_id=c.customer_id);
+
+The EXISTS operator is used to test for the existence of any record in a subquery. It returns TRUE if the subquery returns one or more rows.
+-----------------------------------X-X-X-X-X-----------------------------------------
+Write a SQL query to generate a summary report for all orders. For each unique order, your output must include the following information:
+Order ID,Order Date,Salesman ID,Customer ID and Order Amount is the total value of the order, calculated as the sum of the Quantity multiplied by the Unit Price for all items within that order.
+
+select o.order_id, o.order_date, o.salesman_id, o.customer_id,
+        sum(oi.quantity*oi.unit_price) as Order_Amount
+    from orders o
+        join order_items oi on(oi.order_id=o.order_id)
+    group by o.order_id,o.order_date,o.salesman_id,o.customer_id;
+
+
+Co-Related SubQuery - Column as Subquery
+---------------------
+
+  select o.order_id, o.order_date, o.salesman_id, o.customer_id,
+        (select sum(oi.quantity*oi.unit_price)  from order_items oi 
+                where oi.order_id=o.order_id) as Order_Amount
+    from orders o
+    order by Order_amount desc;
+
+
+
+
+
+-----------------------------------X-X-X-X-X-----------------------------------------
+Subquery as Column
+--------------------
+
+
+Write an Oracle SQL query to retrieve a list of all product IDs and their corresponding total quantity ordered from the order_items table. Your results should only include products where the total quantity sold across all orders exceeds 600 units. Rename the calculated total column as Tot_qty for the final report. Sort by tot_qty as descending order
+
+  select product_id, sum(quantity) as Tot_qty 
+     from order_items
+     group by product_id
+       having sum(quantity) > 600
+     Order by tot_qty desc;
+
+
+Write an Oracle SQL query to retrieve a list of all product IDs and their corresponding total quantity ordered from the order_items table. Your results should only include products where the total quantity sold maximum. Rename the calculated total column as Tot_qty for the final report. Sort by tot_qty as descending order
+
+select product_id, sum(quantity) as Tot_qty 
+    from order_items
+    group by product_id 
+       having sum(quantity) >=all (select sum(quantity) as
+                                from order_items
+                                group by product_id)
+    Order by product_id asc;
+
+
+
+Compares a value to each value returned by the subquery. > ANY means "greater than the minimum."
+Find product who price more than ANY list_price in category_id 4
+(Meaning: less than the lowest listprice in category 4)
+
+select product_id, product_name, description, list_price
+    from products
+        where list_price <any(select list_price from products where category_id=4)
+             and category_id=5;
+
+
+Table as subquery /Inline View (Nested Subquery)
+------------------
+		select product_id,tot_qty
+		   from 
+    			(select product_id, sum(quantity) as Tot_qty 
+        		   from order_items
+        		group by product_id)       
+    		   Order by tot_qty desc;
+
+Write a query to retrieve the total number of orders placed for each product per calendar year.
+Extract the Year from the order date.Filter the results to only include product's total number of orders that appear in more than one order
+
+select to_char(o.order_date,'YYYY') as Year, oi.product_id, count(oi.product_id) as No_Orders
+    from 
+        Order_items oi 
+            join orders o on (o.order_id=oi.order_id)
+    group by to_char(o.order_date,'YYYY'),oi.product_id
+        having count(oi.product_id)>1
+    order by year asc;
+
+-------------------
+
+select t1.year, sum(t1.no_orders) AS No_Orders
+from
+    (select to_char(o.order_date,'YYYY') as Year, oi.product_id, count(oi.product_id) as No_Orders
+    from 
+        Order_items oi 
+            join orders o on (o.order_id=oi.order_id)
+    group by to_char(o.order_date,'YYYY'),oi.product_id
+        having count(oi.product_id)>1) t1
+    group by t1.year
+        having sum(t1.no_orders)>100
+    order by year asc;
+
+
+
+
+-----------------------------------X-X-X-X-X-----------------------------------------
+----------------------------------
+CTE (Common Table Expression) 
+----------------------------------
+
+In Oracle SQL, a CTE (Common Table Expression) is a temporary result set that you define within the execution scope of a single SELECT, INSERT, UPDATE, or DELETE statement.
+
+WITH cte_name AS (
+    SELECT column1, column2
+    FROM table_name
+    WHERE condition
+)
+SELECT * FROM cte_name;
+
+
+with t1 as 
+    (select to_char(o.order_date,'YYYY') as Year, oi.product_id, count(oi.product_id) as No_Orders
+    from 
+        Order_items oi 
+            join orders o on (o.order_id=oi.order_id)
+    group by to_char(o.order_date,'YYYY'),oi.product_id
+        having count(oi.product_id)>1)
+ select t1.year, sum(t1.no_orders) as No_orders
+        from t1
+        group by t1.year
+            having sum(t1.no_orders)>100;
+
+-----------------------------X-X-X-X-X---------------------------------
+
+select product_id,product_name, list_price, category_id
+    from products 
+        where list_price > 1500;
+        
+select product_id,sum(quantity) as No_qty
+    from inventories 
+    group by product_id;
+    
+with t1 as 
+    (select product_id,product_name, list_price
+    from products 
+        where list_price > 1500),
+        
+    t2 as (select product_id,sum(quantity) as No_qty
+    from inventories 
+    group by product_id)
+select t1.product_id, t1.product_name, t1.list_price, t1.list_price - t1.list_price*.25 as Dis_price
+    from t1,t2
+    where t1.product_id=t2.product_id;
+
+-----------------------------X-X-X-X-X---------------------------------
+Windows Functions
+-------------------
+Window Functions (also known as Analytic Functions) allow you to perform calculations across a set of rows that are related to the current row.
+
+SELECT column_name, 
+       FUNCTION_NAME() OVER (
+           [PARTITION BY column] 
+           [ORDER BY column] 
+           [ROWS/RANGE BETWEEN...]
+       ) as alias
+FROM table_name;
+
+
+Ranking Functions:-
+		row_number(), rank(), dense_rank()
+
+Aggregate Window Functions:
+		sum(),avg(),count(), min(), max()
+
+Value function:
+		Lag(), lead()
+
+
+Window Functions vs. Group By
+--------------------------------------
+Feature			GROUP BY 			Window Function (OVER)
+--------------------------------------------------------------------------------
+Row Count	Reduces the number of rows.	Keeps all original rows.
+Focus		"Big Picture" (Totals).		Shows "Detail + Context".
+Usage		Reporting/Summarization.	Running totals, moving averages, rankings.
+
+select  product_name,  list_price,
+    DENSE_RANK() OVER (ORDER BY  list_price desc) Rank_by_Price  
+FROM
+  products;
+
+
+
+--------------------
+
+select  product_name,  list_price,category_id,
+    DENSE_RANK() OVER (partition by category_id ORDER BY  list_price desc) Rank_by_Price  
+FROM
+  products;
+
+----------------------
+
+with t1 as (select  product_name,  list_price,
+    DENSE_RANK() OVER (ORDER BY  list_price desc) Rank_by_Price  
+FROM
+  products;
+)
+ seelct  product_name,  list_price
+	from t1
+	where rank_by_price =5;
+
+------------------------------
+
+SELECT 
+    ROW_NUMBER() OVER(
+        ORDER BY list_price DESC
+    ) row_num, 
+    product_name, 
+    list_price
+FROM 
+    products;
+
+-------------------------------------------
+
+
+SELECT  product_id,  product_name,  list_price,
+  FIRST_VALUE (product_name) OVER ( ORDER BY  list_price  ) first_product
+FROM
+  products
+WHERE
+  category_id = 1;
+
+SELECT  product_id,  product_name,  list_price,
+  lag (list_price) OVER ( ORDER BY  list_price  ) lag_price
+FROM
+  products
+WHERE
+  category_id = 1;
+
+----------------------------------------
+
+Partitioned sum
+---------------------------------------
+select product_id, product_name, list_price, category_id,
+    sum(list_price) over(partition by category_id ) as running_total
+from products;
+
+
+Running Total
+----------------
+
+select product_id, product_name, list_price,
+    sum(list_price) over(order by list_price) as running_total
+from products;
+
+
+select product_id, product_name, list_price, category_id,
+    sum(list_price) over(partition by category_id order by list_price) as running_total
+from products;
+	
